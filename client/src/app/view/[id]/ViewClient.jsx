@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, ArrowLeft, Activity, DollarSign, BarChart3, Clock } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Area } from "recharts";
 
-export default function ViewClient({ id }) {
+export default function ViewClient({ id = "btcusdt" }) {
   const [crypto, setCrypto] = useState(null);
   const [priceHistory, setPriceHistory] = useState([]);
 
@@ -40,10 +41,6 @@ export default function ViewClient({ id }) {
   const lowPrice = parseFloat(crypto.l);
   const volume = parseFloat(crypto.v);
   const quoteVolume = parseFloat(crypto.q);
-
-  const minPrice = Math.min(...priceHistory.map((p) => p.price));
-  const maxPrice = Math.max(...priceHistory.map((p) => p.price));
-  const priceRange = maxPrice - minPrice;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -87,25 +84,60 @@ export default function ViewClient({ id }) {
                 </p>
               </div>
 
-              <div className="bg-slate-900/50 rounded-xl p-6 h-48 relative overflow-hidden">
-                <div className="absolute inset-0 flex items-end px-6 pb-6 gap-1">
-                  {priceHistory.map((point, index) => {
-                    const height = priceRange > 0 ? ((point.price - minPrice) / priceRange) * 100 : 50;
-                    return (
-                      <div
-                        key={index}
-                        className={`flex-1 rounded-t transition-all duration-300 ${
-                          isPositive ? "bg-gradient-to-t from-green-500 to-green-400" : "bg-gradient-to-t from-red-500 to-red-400"
-                        }`}
-                        style={{ height: `${height}%`, opacity: 0.3 + (index / priceHistory.length) * 0.7 }}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="relative z-10 flex items-center gap-2 text-slate-400">
+              <div className="bg-slate-900/50 rounded-xl p-6">
+                <div className="flex items-center gap-2 text-slate-400 mb-4">
                   <Activity className="w-4 h-4" />
-                  <span className="text-sm font-medium">Últimos 20 ticks</span>
+                  <span className="text-sm font-medium">Evolución en tiempo real</span>
+                  <span className="text-xs text-slate-500 ml-auto">Últimos 20 puntos</span>
                 </div>
+                <LineChart
+                  width={700}
+                  height={180}
+                  data={priceHistory.map((point, index) => ({
+                    index,
+                    price: point.price,
+                    time: new Date(point.timestamp).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                  }))}
+                >
+                  <defs>
+                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                  <XAxis
+                    dataKey="time"
+                    stroke="#64748b"
+                    fontSize={10}
+                    tickFormatter={(value, index) => (index % 5 === 0 ? value.split(":").slice(0, 2).join(":") : "")}
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={11}
+                    domain={["dataMin - 0.01", "dataMax + 0.01"]}
+                    tickFormatter={(value) => `$${value.toFixed(2)}`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1e293b",
+                      border: "1px solid #334155",
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                    }}
+                    labelStyle={{ color: "#94a3b8", fontSize: "12px" }}
+                    formatter={(value) => [`$${parseFloat(value).toFixed(8)}`, "Precio"]}
+                  />
+                  <Area type="monotone" dataKey="price" stroke={isPositive ? "#10b981" : "#ef4444"} strokeWidth={2} fill="url(#colorPrice)" />
+                  <Line
+                    type="monotone"
+                    dataKey="price"
+                    stroke={isPositive ? "#10b981" : "#ef4444"}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: isPositive ? "#10b981" : "#ef4444" }}
+                  />
+                </LineChart>
               </div>
             </div>
 
